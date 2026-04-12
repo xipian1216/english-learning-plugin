@@ -1,0 +1,79 @@
+body {
+  margin: 0;
+  min-width: 360px;
+  min-height: 520px;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(circle at top left, #fff1d6 0, transparent 35%),
+    linear-gradient(160deg, #fffaf1 0%, #f3f7ff 100%);
+  color: #172033;
+}
+
+a {
+  color: inherit;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.popup-shell {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.hero {
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 40px rgba(30, 48, 80, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b4642a;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.subtitle {
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #44506a;
+}
+
+.checklist {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.card {
+  padding: 16px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #51607d;
+}

@@ -1,0 +1,31 @@
+{
+    "manifest_version": 3,
+    "name": "English Learning Helper",
+    "description": "A Vue 3 browser extension scaffold for English learning workflows.",
+    "version": "0.0.0",
+    "action": {
+        "default_title": "English Learning Helper",
+        "default_popup": "index.html"
+    },
+    "background": {
+        "service_worker": "assets/background.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "assets/content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ],
+    "permissions": [
+        "storage"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ]
+}
