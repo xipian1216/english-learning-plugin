@@ -18,9 +18,11 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
+        auth: fileURLToPath(new URL('./auth.html', import.meta.url)),
         popup: fileURLToPath(new URL('./index.html', import.meta.url)),
-        background: fileURLToPath(new URL('./src/background.ts', import.meta.url)),
-        content: fileURLToPath(new URL('./src/content.ts', import.meta.url)),
+        personal: fileURLToPath(new URL('./personal.html', import.meta.url)),
+        background: fileURLToPath(new URL('./src/entries/background.ts', import.meta.url)),
+        content: fileURLToPath(new URL('./src/entries/content.ts', import.meta.url)),
       },
       output: {
         entryFileNames: 'assets/[name].js',
