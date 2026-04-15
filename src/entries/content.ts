@@ -1,13 +1,30 @@
-import { addWordToBook, normalizeSelectionText } from '../modules/word-book/api'
-
+// IMPORTANT:
+// This file must remain a classic content script with no imports.
+// Browser extension content_scripts are executed as classic scripts by default.
+// If imports are added here again, the generated bundle may stop working on pages.
 const TOOL_ID = 'english-learning-helper-selection-tool'
 const TOOL_LABEL = 'Add to word book'
 const TOOL_HEIGHT = 40
 const TOOL_GAP = 10
 const VIEWPORT_PADDING = 12
+const STORAGE_KEY = 'wordBook'
+
+type WordBookEntry = {
+  text: string
+  sourceUrl: string
+  sourceTitle: string
+  addedAt: string
+}
+
+type StorageItems = Record<string, unknown>
+type ExtensionStorage = {
+  get(keys: string | string[] | Record<string, unknown> | null, callback: (items: StorageItems) => void): void
+  set(items: StorageItems, callback?: () => void): void
+}
 
 let activeSelection = ''
 let hideTimer: number | null = null
+let suppressSelectionUntil = 0
 
 const toolButton = document.createElement('button')
 toolButton.id = TOOL_ID
@@ -40,12 +57,16 @@ toolButton.addEventListener('click', async (event) => {
     })
 
     toolButton.textContent = 'Saved'
+    toolButton.style.background = 'linear-gradient(135deg, #39a86b 0%, #2f8f5b 100%)'
+    suppressSelectionUntil = Date.now() + 800
     window.setTimeout(() => {
+      clearSelection()
       hideToolButton()
     }, 600)
   } catch (error) {
     console.error('Failed to save selected word.', error)
     toolButton.textContent = 'Retry'
+    toolButton.style.background = 'linear-gradient(135deg, #d95f4a 0%, #b84535 100%)'
     toolButton.disabled = false
   }
 })
@@ -81,6 +102,10 @@ window.addEventListener('resize', () => {
 })
 
 function updateToolFromSelection() {
+  if (Date.now() < suppressSelectionUntil) {
+    return
+  }
+
   const selection = window.getSelection()
 
   if (!selection || selection.rangeCount === 0) {
@@ -108,6 +133,7 @@ function updateToolFromSelection() {
   toolButton.disabled = false
   toolButton.hidden = false
   toolButton.style.display = 'block'
+  toolButton.style.background = 'linear-gradient(135deg, #ff8a3d 0%, #db5c34 100%)'
   positionToolButton(rect)
 
   if (hideTimer) {
@@ -143,6 +169,7 @@ function hideToolButton() {
   toolButton.disabled = false
   toolButton.textContent = TOOL_LABEL
   toolButton.style.display = 'none'
+  toolButton.style.background = 'linear-gradient(135deg, #ff8a3d 0%, #db5c34 100%)'
 
   if (hideTimer) {
     window.clearTimeout(hideTimer)
@@ -152,6 +179,16 @@ function hideToolButton() {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
+}
+
+function clearSelection() {
+  const selection = window.getSelection()
+
+  if (!selection) {
+    return
+  }
+
+  selection.removeAllRanges()
 }
 
 function applyToolButtonStyles(button: HTMLButtonElement) {
@@ -171,4 +208,80 @@ function applyToolButtonStyles(button: HTMLButtonElement) {
   button.style.boxShadow = '0 12px 30px rgba(66, 36, 15, 0.28)'
   button.style.cursor = 'pointer'
   button.style.display = 'none'
+}
+
+function normalizeSelectionText(text: string) {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+async function addWordToBook(entry: Omit<WordBookEntry, 'addedAt'>) {
+  const normalizedText = normalizeSelectionText(entry.text)
+
+  if (!normalizedText) {
+    return
+  }
+
+  const current = await getWordBook()
+  const alreadySaved = current.some(
+    (item) => item.text.toLowerCase() === normalizedText.toLowerCase(),
+  )
+
+  if (alreadySaved) {
+    return
+  }
+
+  const nextEntry: WordBookEntry = {
+    ...entry,
+    text: normalizedText,
+    addedAt: new Date().toISOString(),
+  }
+
+  await storageSet(STORAGE_KEY, [nextEntry, ...current])
+}
+
+async function getWordBook() {
+  const data = await storageGet<WordBookEntry[]>(STORAGE_KEY)
+  return Array.isArray(data) ? data : []
+}
+
+function getExtensionStorage() {
+  return (
+    globalThis as typeof globalThis & {
+      chrome?: {
+        storage?: {
+          local?: ExtensionStorage
+        }
+      }
+    }
+  ).chrome?.storage?.local
+}
+
+function storageGet<T>(key: string) {
+  return new Promise<T | undefined>((resolve) => {
+    const extensionStorage = getExtensionStorage()
+
+    if (!extensionStorage) {
+      resolve(undefined)
+      return
+    }
+
+    extensionStorage.get([key], (items: StorageItems) => {
+      resolve(items[key] as T | undefined)
+    })
+  })
+}
+
+function storageSet<T>(key: string, value: T) {
+  return new Promise<void>((resolve) => {
+    const extensionStorage = getExtensionStorage()
+
+    if (!extensionStorage) {
+      resolve()
+      return
+    }
+
+    extensionStorage.set({ [key]: value }, () => {
+      resolve()
+    })
+  })
 }

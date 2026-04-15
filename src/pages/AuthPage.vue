@@ -36,6 +36,7 @@ const pageTitle = computed(() =>
 )
 
 const submitLabel = computed(() => (mode.value === 'login' ? 'Login' : 'Create account'))
+const loginValidationMessage = '账号或密码错误'
 
 onMounted(() => {
   void restoreSession()
@@ -114,6 +115,21 @@ function validateForm() {
   const normalizedEmail = form.email.trim()
   const displayName = form.displayName.trim()
 
+  if (mode.value === 'login') {
+    const isEmailValid = /.+@.+\..+/.test(normalizedEmail)
+    const isPasswordValid = form.password.length >= 8 && form.password.length <= 128
+
+    form.email = normalizedEmail
+    form.displayName = displayName
+
+    if (!normalizedEmail || !form.password || !isEmailValid || !isPasswordValid) {
+      errorMessage.value = loginValidationMessage
+      return false
+    }
+
+    return true
+  }
+
   if (!normalizedEmail) {
     fieldErrors.email = authErrorMessages.fields.email.valueMissing
   } else if (!/.+@.+\..+/.test(normalizedEmail)) {
@@ -149,120 +165,110 @@ function resetMessages() {
 
 <template>
   <main class="auth-shell">
-    <section class="auth-hero">
-      <div>
-        <p class="eyebrow">Authentication</p>
-        <h1>{{ pageTitle }}</h1>
-        <p class="subtitle">
-          Use the documented `/api/v1/users` and `/api/v1/sessions` endpoints to register or sign
-          in.
-        </p>
-      </div>
-
-      <div class="auth-links">
-        <a
-          class="hero-link hero-link--ghost"
-          href="/personal.html"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open personal page
-        </a>
-      </div>
-    </section>
-
-    <section class="auth-panel">
-      <div class="auth-segment">
-        <button
-          class="auth-segment__item"
-          :class="{ 'auth-segment__item--active': mode === 'login' }"
-          type="button"
-          @click="switchMode('login')"
-        >
-          Login
-        </button>
-        <button
-          class="auth-segment__item"
-          :class="{ 'auth-segment__item--active': mode === 'register' }"
-          type="button"
-          @click="switchMode('register')"
-        >
-          Register
-        </button>
-      </div>
-
-      <p class="auth-note">API base URL: `http://localhost:8000/api/v1`</p>
-
-      <div v-if="checkingSession" class="empty-state">Checking existing session...</div>
-
-      <template v-else>
-        <div v-if="sessionUser" class="session-card">
-          <p class="section-kicker">Current Session</p>
-          <h2>{{ sessionUser.display_name || sessionUser.email }}</h2>
-          <p class="session-meta">{{ sessionUser.email }}</p>
-          <p v-if="sessionUser.english_level || sessionUser.learning_goal" class="session-meta">
-            {{ sessionUser.english_level || 'Level not set' }} ·
-            {{ sessionUser.learning_goal || 'Learning goal not set' }}
+    <div class="auth-window">
+      <section class="auth-hero auth-hero--compact">
+        <div>
+          <p class="eyebrow">Authentication</p>
+          <h1>{{ sessionUser ? 'You are signed in' : pageTitle }}</h1>
+          <p class="subtitle">
+            {{
+              sessionUser
+                ? 'Your account is ready. Open the personal page to manage your vocabulary and learning records.'
+                : 'Sign in to sync your learning data and access your personal word book.'
+            }}
           </p>
+        </div>
+      </section>
 
-          <div class="session-actions">
-            <button class="refresh-button" type="button" @click="restoreSession">
-              Refresh profile
-            </button>
-            <button class="secondary-button" type="button" @click="logout">Logout</button>
-          </div>
+      <section class="auth-panel auth-panel--compact">
+        <div v-if="!sessionUser" class="auth-segment">
+          <button
+            class="auth-segment__item"
+            :class="{ 'auth-segment__item--active': mode === 'login' }"
+            type="button"
+            @click="switchMode('login')"
+          >
+            Login
+          </button>
+          <button
+            class="auth-segment__item"
+            :class="{ 'auth-segment__item--active': mode === 'register' }"
+            type="button"
+            @click="switchMode('register')"
+          >
+            Register
+          </button>
         </div>
 
-        <form v-else class="auth-form" @submit.prevent="submitAuthForm">
-          <label class="auth-field">
-            <span>Email</span>
-            <input
-              v-model="form.email"
-              type="email"
-              autocomplete="email"
-              placeholder="user@example.com"
-              maxlength="255"
-            />
-            <small v-if="fieldErrors.email" class="field-error">{{ fieldErrors.email }}</small>
-          </label>
+        <p v-if="!sessionUser" class="auth-note">Use your email and password to continue.</p>
 
-          <label v-if="mode === 'register'" class="auth-field">
-            <span>Display name</span>
-            <input
-              v-model="form.displayName"
-              type="text"
-              autocomplete="nickname"
-              placeholder="Pian Xi"
-              maxlength="100"
-            />
-            <small v-if="fieldErrors.displayName" class="field-error">{{
-              fieldErrors.displayName
-            }}</small>
-          </label>
+        <div v-if="checkingSession" class="empty-state">Checking existing session...</div>
 
-          <label class="auth-field">
-            <span>Password</span>
-            <input
-              v-model="form.password"
-              type="password"
-              :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
-              minlength="8"
-              maxlength="128"
-              placeholder="Enter your password"
-            />
-            <small v-if="fieldErrors.password" class="field-error">{{
-              fieldErrors.password
-            }}</small>
-          </label>
+        <template v-else>
+          <div v-if="sessionUser" class="session-card">
+            <p class="section-kicker">Current User</p>
+            <h2>{{ sessionUser.display_name || sessionUser.email }}</h2>
+            <p class="session-meta">{{ sessionUser.email }}</p>
 
-          <button class="refresh-button auth-submit" type="submit" :disabled="submitting">
-            {{ submitting ? 'Submitting...' : submitLabel }}
-          </button>
-        </form>
-      </template>
+            <div class="session-actions">
+              <a class="hero-link" href="/personal.html" target="_blank" rel="noreferrer">
+                Open personal page
+              </a>
+              <button class="secondary-button" type="button" @click="logout">Logout</button>
+            </div>
+          </div>
 
-      <p v-if="errorMessage" class="feedback feedback--error">{{ errorMessage }}</p>
-      <p v-if="successMessage" class="feedback feedback--success">{{ successMessage }}</p>
-    </section>
+          <form v-else class="auth-form" novalidate @submit.prevent="submitAuthForm">
+            <label class="auth-field">
+              <span>Email</span>
+              <input
+                v-model="form.email"
+                type="email"
+                autocomplete="email"
+                placeholder="user@example.com"
+                maxlength="255"
+              />
+              <small v-if="fieldErrors.email" class="field-error">{{ fieldErrors.email }}</small>
+            </label>
+
+            <label v-if="mode === 'register'" class="auth-field">
+              <span>Display name</span>
+              <input
+                v-model="form.displayName"
+                type="text"
+                autocomplete="nickname"
+                placeholder="Pian Xi"
+                maxlength="100"
+              />
+              <small v-if="fieldErrors.displayName" class="field-error">{{
+                fieldErrors.displayName
+              }}</small>
+            </label>
+
+            <label class="auth-field">
+              <span>Password</span>
+              <input
+                v-model="form.password"
+                type="password"
+                :autocomplete="mode === 'login' ? 'current-password' : 'new-password'"
+                minlength="8"
+                maxlength="128"
+                placeholder="Enter your password"
+              />
+              <small v-if="fieldErrors.password" class="field-error">{{
+                fieldErrors.password
+              }}</small>
+            </label>
+
+            <button class="refresh-button auth-submit" type="submit" :disabled="submitting">
+              {{ submitting ? 'Submitting...' : submitLabel }}
+            </button>
+          </form>
+        </template>
+
+        <p v-if="errorMessage" class="feedback feedback--error">{{ errorMessage }}</p>
+        <p v-if="successMessage" class="feedback feedback--success">{{ successMessage }}</p>
+      </section>
+    </div>
   </main>
 </template>
