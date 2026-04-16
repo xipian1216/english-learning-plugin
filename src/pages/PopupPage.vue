@@ -19,14 +19,6 @@ onMounted(() => {
       <p class="subtitle">
         Select text on any webpage, tap the floating button, and the word will be saved here.
       </p>
-      <div class="hero-actions">
-        <a class="hero-link" href="/personal.html" target="_blank" rel="noreferrer">
-          Open detailed personal page
-        </a>
-        <a class="hero-link hero-link--ghost" href="/auth.html" target="_blank" rel="noreferrer">
-          Open login page
-        </a>
-      </div>
     </section>
 
     <section class="stats-grid">

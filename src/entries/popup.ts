@@ -1,9 +1,9 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import WordBookPage from '../pages/WordBookPage.vue'
+import PopupPage from '../pages/PopupPage.vue'
 import '../shared/styles/main.css'
 
-const app = createApp(WordBookPage)
+const app = createApp(PopupPage)
 
 app.use(createPinia())
 
